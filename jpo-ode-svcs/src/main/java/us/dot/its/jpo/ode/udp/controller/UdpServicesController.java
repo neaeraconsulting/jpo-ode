@@ -15,6 +15,7 @@ import us.dot.its.jpo.ode.udp.AbstractUdpReceiverPublisher;
 import us.dot.its.jpo.ode.udp.bsm.BsmReceiver;
 import us.dot.its.jpo.ode.udp.generic.GenericReceiver;
 import us.dot.its.jpo.ode.udp.map.MapReceiver;
+import us.dot.its.jpo.ode.udp.portmapped.PortMappedIngestConfigLoader;
 import us.dot.its.jpo.ode.udp.psm.PsmReceiver;
 import us.dot.its.jpo.ode.udp.rsm.RsmReceiver;
 import us.dot.its.jpo.ode.udp.rtcm.RtcmReceiver;
@@ -59,6 +60,12 @@ public class UdpServicesController {
     startReceiver(new RtcmReceiver(udpProps.getRtcm(), kafkaTemplate, rawEncodedJsonTopics.getRtcm()));
     startReceiver(new RsmReceiver(udpProps.getRsm(), kafkaTemplate, rawEncodedJsonTopics.getRsm()));
     startReceiver(new GenericReceiver(udpProps.getGeneric(), kafkaTemplate, rawEncodedJsonTopics));
+
+    
+    List<AbstractUdpReceiverPublisher> receivers = new PortMappedIngestConfigLoader().loadReceivers(udpProps, rawEncodedJsonTopics, kafkaTemplate);
+    for (AbstractUdpReceiverPublisher receiver : receivers) {
+      startReceiver(receiver);
+    }
 
     log.debug("UDP receiver services started.");
   }
