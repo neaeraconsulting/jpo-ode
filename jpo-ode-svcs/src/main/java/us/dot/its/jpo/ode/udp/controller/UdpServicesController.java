@@ -45,7 +45,8 @@ public class UdpServicesController {
   @Autowired
   public UdpServicesController(UDPReceiverProperties udpProps,
                                RawEncodedJsonTopics rawEncodedJsonTopics,
-                               KafkaTemplate<String, String> kafkaTemplate) {
+                               KafkaTemplate<String, String> kafkaTemplate,
+                               PortMappedIngestConfigLoader portMappedIngestConfigLoader) {
 
     log.debug("Starting UDP receiver services...");
 
@@ -62,7 +63,8 @@ public class UdpServicesController {
     startReceiver(new GenericReceiver(udpProps.getGeneric(), kafkaTemplate, rawEncodedJsonTopics));
 
     
-    List<AbstractUdpReceiverPublisher> receivers = new PortMappedIngestConfigLoader().loadReceivers(udpProps, rawEncodedJsonTopics, kafkaTemplate);
+    List<AbstractUdpReceiverPublisher> receivers = portMappedIngestConfigLoader
+      .loadReceivers(udpProps, rawEncodedJsonTopics, kafkaTemplate);
     for (AbstractUdpReceiverPublisher receiver : receivers) {
       startReceiver(receiver);
     }

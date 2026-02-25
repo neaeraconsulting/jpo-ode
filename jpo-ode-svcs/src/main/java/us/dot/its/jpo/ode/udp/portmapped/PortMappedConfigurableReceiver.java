@@ -2,6 +2,8 @@ package us.dot.its.jpo.ode.udp.portmapped;
 
 import io.netty.handler.codec.UnsupportedMessageTypeException;
 import java.net.DatagramPacket;
+import java.net.InetAddress;
+
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tomcat.util.buf.HexUtils;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -39,7 +41,9 @@ public class PortMappedConfigurableReceiver extends AbstractUdpReceiverPublisher
    */
     public PortMappedConfigurableReceiver(ReceiverProperties props, KafkaTemplate<String, String> kafkaTemplate,
       RawEncodedJsonTopics rawEncodedJsonTopics, PortMappedIngestConfig.PortMappedIngestSource ingestConfig) {
+
     super(props.getReceiverPort(), props.getBufferSize());
+    log.debug("Creating PortMappedConfigurableReceiver with port {} and buffer size {} and Remap IP {}", props.getReceiverPort(), props.getBufferSize(), ingestConfig.getOriginIp());
 
     this.publisher = kafkaTemplate;
     this.rawEncodedJsonTopics = rawEncodedJsonTopics;
@@ -56,15 +60,19 @@ public class PortMappedConfigurableReceiver extends AbstractUdpReceiverPublisher
       // packet should be recreated on each loop to prevent latent data in buffer
       DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
       try {
-        System.out.println("Waiting for UDP "+this.ingestConfig.getPort()+ " packets for type "+this.ingestConfig.getType()+" and intersection "+this.ingestConfig.getIntersectionId()+"...");
         socket.receive(packet);
         byte[] payload = packet.getData();
+
         if ((packet.getLength() <= 0) || (payload == null)) {
           log.debug("Skipping empty payload");
           continue;
         }
 
+        
+
         senderIp = this.ingestConfig.getOriginIp();
+        InetAddress senderAddress = InetAddress.getByName(senderIp);
+        packet.setAddress(senderAddress);
         senderPort = packet.getPort();
         log.debug("Packet received from {}:{}", senderIp, senderPort);
 
