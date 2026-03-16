@@ -44,6 +44,7 @@ public class PortMappedConfigurableReceiver extends AbstractUdpReceiverPublisher
 
     super(props.getReceiverPort(), props.getBufferSize());
     log.debug("Creating PortMappedConfigurableReceiver with port {} and buffer size {} and Remap IP {}", props.getReceiverPort(), props.getBufferSize(), ingestConfig.getOriginIp());
+    log.info("Creating PortMappedConfigurableReceiver with port " + props.getReceiverPort() + " and buffer size " + props.getBufferSize() + " and Remap IP " + ingestConfig.getOriginIp());
 
     this.publisher = kafkaTemplate;
     this.rawEncodedJsonTopics = rawEncodedJsonTopics;
