@@ -65,11 +65,12 @@ public class KafkaConsumerConfig {
   public ConcurrentKafkaListenerContainerFactory<String, String> kafkaListenerContainerFactory() {
     ConcurrentKafkaListenerContainerFactory<String, String> factory =
         new ConcurrentKafkaListenerContainerFactory<>();
-    Listener listenerProperties = kafkaProperties.getListener();
-    if (listenerProperties.getConcurrency() != null) {
-      factory.setConcurrency(listenerProperties.getConcurrency());
-    }
     factory.setConsumerFactory(consumerFactory());
+
+    // Set concurrency
+    // Usually set to number of partitions per topic per ode app instance
+    factory.setConcurrency(kafkaProperties.getListener().getConcurrency());
+
     return factory;
   }
 
