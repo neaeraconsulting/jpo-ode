@@ -136,6 +136,7 @@ class Asn1DecodedDataRouterTest {
     for (String recordType : new String[] {"timMsg", "rxMsg"}) {
       String inputData = replaceRecordType(baseTestData, "timMsg", recordType);
       var uniqueKey = UUID.randomUUID().toString();
+      log.info("testAsn1DecodedDataRouterTIMDataFlow send value: {}", inputData);
       kafkaStringTemplate.send(asn1CoderTopics.getDecoderOutput(), uniqueKey, inputData);
 
       var expectedTim = replaceJSONRecordType(baseExpectedTim, "timMsg", recordType);
@@ -156,6 +157,7 @@ class Asn1DecodedDataRouterTest {
       var records = KafkaTestUtils.getRecords(testConsumer, Duration.ofMillis(100));
       assertThat("records.count()", records.count(), greaterThanOrEqualTo(1));
       for (var record : records) {
+        log.info("testAsn1DecodedDataRouterTIMDataFlow received value: {}", record.value());
         OdeMessageFrameData consumedTimMFrameData =
             mapper.readValue(record.value(), OdeMessageFrameData.class);
 
