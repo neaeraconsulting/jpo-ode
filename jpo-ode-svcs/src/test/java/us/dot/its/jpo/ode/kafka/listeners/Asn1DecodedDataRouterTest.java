@@ -2,7 +2,6 @@ package us.dot.its.jpo.ode.kafka.listeners;
 
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -12,7 +11,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -120,7 +118,6 @@ class Asn1DecodedDataRouterTest {
 
   @Test
   void testAsn1DecodedDataRouterTIMDataFlow() throws IOException {
-    log.info("testAsn1DecodedDataRouterTIMDataFlow");
     String[] topics = Arrays.array(jsonTopics.getTim());
     EmbeddedKafkaHolder.addTopics(topics);
 
@@ -131,13 +128,12 @@ class Asn1DecodedDataRouterTest {
     var consumerFactory = new DefaultKafkaConsumerFactory<>(consumerProps, new StringDeserializer(),
         new StringDeserializer());
     var testConsumer = consumerFactory.createConsumer();
-    embeddedKafka.consumeFromEmbeddedTopics(testConsumer, true, topics);
+    embeddedKafka.consumeFromEmbeddedTopics(testConsumer, topics);
 
     String baseExpectedTim = loadFromResource("us/dot/its/jpo/ode/services/asn1/expected-tim.json");
     for (String recordType : new String[] {"timMsg", "rxMsg"}) {
       String inputData = replaceRecordType(baseTestData, "timMsg", recordType);
       var uniqueKey = UUID.randomUUID().toString();
-      log.info("testAsn1DecodedDataRouterTIMDataFlow send value: {}", inputData);
       kafkaStringTemplate.send(asn1CoderTopics.getDecoderOutput(), uniqueKey, inputData);
 
       var expectedTim = replaceJSONRecordType(baseExpectedTim, "timMsg", recordType);
@@ -154,20 +150,14 @@ class Asn1DecodedDataRouterTest {
         default -> throw new IllegalStateException("Unexpected value: " + recordType);
       }
 
-      //var consumedTim = KafkaTestUtils.getSingleRecord(testConsumer, jsonTopics.getTim());
-      var records = KafkaTestUtils.getRecords(testConsumer, Duration.ofMillis(100));
-      log.info("records.count(): {}", records.count());
-      assertThat("records.count()", records.count(), greaterThanOrEqualTo(1));
-      for (var record : records) {
-        log.info("testAsn1DecodedDataRouterTIMDataFlow received value: {}", record.value());
-        OdeMessageFrameData consumedTimMFrameData =
-            mapper.readValue(record.value(), OdeMessageFrameData.class);
+      var consumedTim = KafkaTestUtils.getSingleRecord(testConsumer, jsonTopics.getTim());
+      OdeMessageFrameData consumedTimMFrameData =
+          mapper.readValue(consumedTim.value(), OdeMessageFrameData.class);
 
-        String actualMF = JsonUtils.toJson(consumedTimMFrameData, false);
-        String expectedMF = JsonUtils.toJson(expectedTimMFrameData, false);
+      String actualMF = JsonUtils.toJson(consumedTimMFrameData, false);
+      String expectedMF = JsonUtils.toJson(expectedTimMFrameData, false);
 
-        assertThat(actualMF, jsonEquals(expectedMF).withTolerance(0.0001));
-      }
+      assertThat(actualMF, jsonEquals(expectedMF).withTolerance(0.0001));
     }
     testConsumer.close();
   }
