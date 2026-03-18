@@ -120,6 +120,7 @@ class Asn1DecodedDataRouterTest {
 
   @Test
   void testAsn1DecodedDataRouterTIMDataFlow() throws IOException {
+    log.info("testAsn1DecodedDataRouterTIMDataFlow");
     String[] topics = Arrays.array(jsonTopics.getTim());
     EmbeddedKafkaHolder.addTopics(topics);
 
@@ -155,6 +156,7 @@ class Asn1DecodedDataRouterTest {
 
       //var consumedTim = KafkaTestUtils.getSingleRecord(testConsumer, jsonTopics.getTim());
       var records = KafkaTestUtils.getRecords(testConsumer, Duration.ofMillis(100));
+      log.info("records.count(): {}", records.count());
       assertThat("records.count()", records.count(), greaterThanOrEqualTo(1));
       for (var record : records) {
         log.info("testAsn1DecodedDataRouterTIMDataFlow received value: {}", record.value());
