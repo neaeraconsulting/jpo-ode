@@ -12,17 +12,17 @@ import us.dot.its.jpo.ode.udp.AbstractUdpReceiverPublisher;
 import us.dot.its.jpo.ode.udp.InvalidPayloadException;
 import us.dot.its.jpo.ode.udp.UdpHexDecoder;
 import us.dot.its.jpo.ode.udp.controller.UDPReceiverProperties.ReceiverProperties;
+import us.dot.its.jpo.ode.udp.generic.GenericReceiver;
 
 /**
- * GenericReceiver is a class that listens for UDP packets and processes them based on the
- * determined message type. It extends AbstractUdpReceiverPublisher to take advantage of the
- * runnable interface for running the receiver service in a separate thread.
+ * PortMappedConfigurableReceiver is a class that listens for UDP packets and processes them based on the
+ * determined message type. It extends GenericReceiver to take advantage multi message routing
  *
  * </p>The class is designed to handle all {@link us.dot.its.jpo.ode.uper.SupportedMessageType}
  * message types encoded in UDP packets such as and routes them to the appropriate Kafka topic.
  */
 @Slf4j
-public class PortMappedConfigurableReceiver extends AbstractUdpReceiverPublisher {
+public class PortMappedConfigurableReceiver extends GenericReceiver {
 
   private final KafkaTemplate<String, String> publisher;
   private final RawEncodedJsonTopics rawEncodedJsonTopics;
@@ -41,14 +41,12 @@ public class PortMappedConfigurableReceiver extends AbstractUdpReceiverPublisher
    */
     public PortMappedConfigurableReceiver(ReceiverProperties props, KafkaTemplate<String, String> kafkaTemplate,
       RawEncodedJsonTopics rawEncodedJsonTopics, PortMappedIngestConfig.PortMappedIngestSource ingestConfig) {
+      super(props, kafkaTemplate, rawEncodedJsonTopics);
+      log.info("Creating PortMappedConfigurableReceiver with port " + props.getReceiverPort() + " and buffer size " + props.getBufferSize() + " and Remap IP " + ingestConfig.getOriginIp());
 
-    super(props.getReceiverPort(), props.getBufferSize());
-    log.debug("Creating PortMappedConfigurableReceiver with port {} and buffer size {} and Remap IP {}", props.getReceiverPort(), props.getBufferSize(), ingestConfig.getOriginIp());
-    log.info("Creating PortMappedConfigurableReceiver with port " + props.getReceiverPort() + " and buffer size " + props.getBufferSize() + " and Remap IP " + ingestConfig.getOriginIp());
-
-    this.publisher = kafkaTemplate;
-    this.rawEncodedJsonTopics = rawEncodedJsonTopics;
-    this.ingestConfig = ingestConfig;
+      this.publisher = kafkaTemplate;
+      this.rawEncodedJsonTopics = rawEncodedJsonTopics;
+      this.ingestConfig = ingestConfig;
   }
 
   @Override
@@ -63,7 +61,6 @@ public class PortMappedConfigurableReceiver extends AbstractUdpReceiverPublisher
       try {
         socket.receive(packet);
         byte[] payload = packet.getData();
-
         if ((packet.getLength() <= 0) || (payload == null)) {
           log.debug("Skipping empty payload");
           continue;
@@ -90,76 +87,5 @@ public class PortMappedConfigurableReceiver extends AbstractUdpReceiverPublisher
         log.error("Error receiving packet", e);
       }
     } while (!isStopped());
-  }
-
-  private void routeMessageByMessageType(
-      String messageType,
-      DatagramPacket packet
-  ) throws InvalidPayloadException, UnsupportedMessageTypeException {
-    log.debug("Detected Message Type {}", messageType);
-    switch (messageType) {
-      case "MAP" -> {
-        String mapJson = UdpHexDecoder.buildJsonMapFromPacket(packet);
-        log.debug("Sending Data to Topic {}", mapJson);
-        if (mapJson != null) {
-          publisher.send(rawEncodedJsonTopics.getMap(), mapJson);
-        }
-      }
-      case "SPAT" -> {
-        String spatJson = UdpHexDecoder.buildJsonSpatFromPacket(packet);
-        if (spatJson != null) {
-          publisher.send(rawEncodedJsonTopics.getSpat(), spatJson);
-        }
-      }
-      case "TIM" -> {
-        String timJson = UdpHexDecoder.buildJsonTimFromPacket(packet);
-        if (timJson != null) {
-          publisher.send(rawEncodedJsonTopics.getTim(), timJson);
-        }
-      }
-      case "BSM" -> {
-        String bsmJson = UdpHexDecoder.buildJsonBsmFromPacket(packet);
-        if (bsmJson != null) {
-          publisher.send(rawEncodedJsonTopics.getBsm(), bsmJson);
-        }
-      }
-      case "SSM" -> {
-        String ssmJson = UdpHexDecoder.buildJsonSsmFromPacket(packet);
-        if (ssmJson != null) {
-          publisher.send(rawEncodedJsonTopics.getSsm(), ssmJson);
-        }
-      }
-      case "SRM" -> {
-        String srmJson = UdpHexDecoder.buildJsonSrmFromPacket(packet);
-        if (srmJson != null) {
-          publisher.send(rawEncodedJsonTopics.getSrm(), srmJson);
-        }
-      }
-      case "PSM" -> {
-        String psmJson = UdpHexDecoder.buildJsonPsmFromPacket(packet);
-        if (psmJson != null) {
-          publisher.send(rawEncodedJsonTopics.getPsm(), psmJson);
-        }
-      }
-      case "SDSM" -> {
-        String sdsmJson = UdpHexDecoder.buildJsonSdsmFromPacket(packet);
-        if (sdsmJson != null) {
-          publisher.send(rawEncodedJsonTopics.getSdsm(), sdsmJson);
-        }
-      }
-      case "RTCM" -> {
-        String rtcmJson = UdpHexDecoder.buildJsonRtcmFromPacket(packet);
-        if (rtcmJson != null) {
-          publisher.send(rawEncodedJsonTopics.getRtcm(), rtcmJson);
-        }
-      }
-      case "RSM" -> {
-        String rsmJson = UdpHexDecoder.buildJsonRsmFromPacket(packet);
-        if (rsmJson != null) {
-          publisher.send(rawEncodedJsonTopics.getRsm(), rsmJson);
-        }
-      }
-      default -> throw new UnsupportedMessageTypeException(messageType);
-    }
   }
 }
