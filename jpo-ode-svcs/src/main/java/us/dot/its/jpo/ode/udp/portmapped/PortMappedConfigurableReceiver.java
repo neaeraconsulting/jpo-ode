@@ -24,8 +24,6 @@ import us.dot.its.jpo.ode.udp.generic.GenericReceiver;
 @Slf4j
 public class PortMappedConfigurableReceiver extends GenericReceiver {
 
-  private final KafkaTemplate<String, String> publisher;
-  private final RawEncodedJsonTopics rawEncodedJsonTopics;
   private final PortMappedIngestConfig.PortMappedIngestSource ingestConfig;
 
   /**
@@ -34,9 +32,6 @@ public class PortMappedConfigurableReceiver extends GenericReceiver {
    *
    * @param props                the receiver properties containing configuration settings such as
    *                             port and buffer size
-   * @param kafkaTemplate        the KafkaTemplate used for publishing messages
-   * @param rawEncodedJsonTopics the configuration object containing the topics used to publish
-   *                             messages
    * @param ingestConfig         the configuration object containing the ingest settings
    */
     public PortMappedConfigurableReceiver(ReceiverProperties props, KafkaTemplate<String, String> kafkaTemplate,
@@ -44,8 +39,6 @@ public class PortMappedConfigurableReceiver extends GenericReceiver {
       super(props, kafkaTemplate, rawEncodedJsonTopics);
       log.info("Creating PortMappedConfigurableReceiver with port " + props.getReceiverPort() + " and buffer size " + props.getBufferSize() + " and Remap IP " + ingestConfig.getOriginIp());
 
-      this.publisher = kafkaTemplate;
-      this.rawEncodedJsonTopics = rawEncodedJsonTopics;
       this.ingestConfig = ingestConfig;
   }
 
