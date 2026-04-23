@@ -86,6 +86,49 @@ ode:
         rsm: "topic.OdeRawEncodedRSMJson"
       sdx-depositor:
         input: "topic.SDWDepositorInput"
+  port-mapped-ingest:
+    sources:
+      - intersection-name: "Busy Intersection"
+        intersection-id: 1234
+        origin-ip: 1.2.3.4
+        port: 10001
+        type: BSM
+      - intersection-name: "Busy Intersection"
+        intersection-id: 1234
+        origin-ip: 1.2.3.4
+        port: 10002
+        type: MAP
+      - intersection-name: "Busy Intersection"
+        intersection-id: 1234
+        origin-ip: 1.2.3.4
+        port: 10003
+        type: SPAT
+      - intersection-name: "Busy Intersection"
+        intersection-id: 1234
+        origin-ip: 1.2.3.4
+        port: 10004
+        type: PSM
+      - intersection-name: "Busy Intersection"
+        intersection-id: 1234
+        origin-ip: 1.2.3.4
+        port: 10005
+        type: SSM
+      - intersection-name: "Busy Intersection"
+        intersection-id: 1234
+        origin-ip: 1.2.3.4
+        port: 10006
+        type: SRM
+      - intersection-name: "Busy Intersection"
+        intersection-id: 1234
+        origin-ip: 1.2.3.4
+        port: 10007
+        type: TIM
+      - intersection-name: "Busy Intersection"
+        intersection-id: 1234
+        origin-ip: 1.2.3.4
+        port: 10008
+        type: SDSM
+
 
   receivers:
     generic:
