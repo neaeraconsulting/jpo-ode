@@ -220,8 +220,8 @@ None
     - [ ] code compiles
         - gradle build
             - [ ] `jpo-asn-j2735-2024` subproject builds via gradle
-            - [ ] `jpo-asn-test-generator` subproject build via gradle
-            - [ ] `jpo-asn-jsonschema-generator` subproject build via gradle
+            - [ ] `jpo-asn-test-generator` subproject builds via gradle
+            - [ ] `jpo-asn-jsonschema-generator` subproject builds via gradle
         - maven build:
             - [ ] `jpo-asn-j2735-2024` subproject builds via maven
     - [ ] unit tests pass
