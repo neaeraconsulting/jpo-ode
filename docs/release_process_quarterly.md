@@ -45,7 +45,7 @@ None
 
 #### Details on how to do tests
 
-Run compilation and unit tests in Docker via:
+Run compilation and unit tests in Docker: From the root directory of asn1_codec issue:
 ```
 docker build -t acm .
 docker run --env-file .env --name acm -it acm
