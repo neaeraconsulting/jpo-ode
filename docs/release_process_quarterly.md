@@ -60,7 +60,7 @@ where the `.env` file is configured with necessary environment variables.
 
 To test program startup and encoding/decoding:
 
-Pull the release branch into the ODE submodule, and run the ODE via `docker compose up --build -d` from the jpo-ode root director, with the following profiles set in the `.env` file:
+Pull the release branch into the ODE submodule, and run the ODE via `docker compose up --build -d` from the jpo-ode root directory, with the following profiles set in the `.env` file:
 ```
 COMPOSE_PROFILES=ode,adm,aem,kafka,kafka_setup,kafka_ui
 ```
