@@ -11,7 +11,7 @@ Enhancements in this release:
 - [Port remap receiver](https://github.com/neaeraconsulting/jpo-ode/pull/2)
 - [Configurable kafka concurrency](https://github.com/neaeraconsulting/jpo-ode/pull/3)
 - [Docker shared Kafka fix](https://github.com/neaeraconsulting/jpo-ode/pull/9)
-
+- [Add env vars for number of ACM processes, update test process](https://github.com/neaeraconsulting/jpo-ode/pull/7)
 
 Version 5.1.0, released October 2025
 ----------------------------------------
