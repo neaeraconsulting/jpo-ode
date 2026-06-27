@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
@@ -39,6 +40,7 @@ import us.dot.its.jpo.ode.util.XmlUtils.XmlUtilsException;
  */
 @Slf4j
 @Component
+@ConditionalOnProperty(name = "ode.ffmlib.enabled", havingValue = "false", matchIfMissing = true)
 public class Asn1DecodedDataRouter {
 
   private final JsonTopics jsonTopics;

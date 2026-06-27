@@ -2,12 +2,10 @@ package us.dot.its.jpo.ode.kafka.listeners.json;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
+import us.dot.its.jpo.ode.codec.ffmlib.RawEncodedDecodeService;
 import us.dot.its.jpo.ode.model.OdeMessageFrameMetadata;
-import us.dot.its.jpo.ode.model.OdeObject;
 import us.dot.its.jpo.ode.uper.StartFlagNotFoundException;
 import us.dot.its.jpo.ode.uper.SupportedMessageType;
 
@@ -19,23 +17,20 @@ import us.dot.its.jpo.ode.uper.SupportedMessageType;
 @Component
 public class RawEncodedBSMJsonRouter {
 
-  private final KafkaTemplate<String, OdeObject> kafkaTemplate;
-  private final String publishTopic;
+  private final RawEncodedDecodeService decodeService;
   private final RawEncodedJsonService rawEncodedJsonService;
 
   /**
    * Constructs an instance of the RawEncodedBSMJsonRouter.
    *
-   * @param kafkaTemplate A KafkaTemplate for publishing messages to a Kafka topic.
-   * @param publishTopic  The name of the Kafka topic to publish the processed messages to.
+   * @param decodeService         Strategy that either forwards to the Asn1DecoderInput Kafka topic
+   *                              or decodes in-process via FFMLib, depending on configuration.
    * @param rawEncodedJsonService A service to transform incoming data into the expected output
    */
-  public RawEncodedBSMJsonRouter(KafkaTemplate<String, OdeObject> kafkaTemplate,
-      RawEncodedJsonService rawEncodedJsonService,
-      @Value("${ode.kafka.topics.asn1.decoder-input}") String publishTopic) {
-    this.kafkaTemplate = kafkaTemplate;
+  public RawEncodedBSMJsonRouter(RawEncodedDecodeService decodeService,
+      RawEncodedJsonService rawEncodedJsonService) {
+    this.decodeService = decodeService;
     this.rawEncodedJsonService = rawEncodedJsonService;
-    this.publishTopic = publishTopic;
   }
 
   /**
@@ -56,6 +51,6 @@ public class RawEncodedBSMJsonRouter {
         rawEncodedJsonService.addEncodingAndMutateBytes(consumerRecord.value(),
             SupportedMessageType.BSM,
             OdeMessageFrameMetadata.class);
-    kafkaTemplate.send(publishTopic, consumerRecord.key(), messageToPublish);
+    decodeService.decode(messageToPublish, consumerRecord.key());
   }
 }

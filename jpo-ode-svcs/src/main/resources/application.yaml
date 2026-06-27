@@ -129,6 +129,9 @@ ode:
     time-period: 5
     upload-location-root: "uploads"
     obu-log-upload-location: "bsmlog"
+  ffmlib:
+    enabled: ${ODE_FFMLIB_ENABLED:false}
+    native-library-path: ${ODE_FFMLIB_NATIVE_LIB_PATH:}
   tim-ingest-monitoring:
     tracking-enabled: ${ODE_TIM_INGEST_MONITORING_ENABLED}
     interval: ${ODE_TIM_INGEST_MONITORING_INTERVAL}

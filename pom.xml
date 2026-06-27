@@ -31,13 +31,13 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <java.version>21</java.version>
+    <java.version>23</java.version>
 
     <!-- Generic properties -->
     <finalLocation>${project.build.directory}/${project.artifactId}-${project.version}</finalLocation>
     <timestamp>${maven.build.timestamp}</timestamp>
     <maven.build.timestamp.format>yyyy-MM-dd'T'HH:mm:ss.SSSZ</maven.build.timestamp.format>
-    <java.version>21</java.version>
+    <java.version>23</java.version>
     <sonar.organization>usdot-jpo-ode</sonar.organization>
     <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     <checkstyle-maven-plugin.version>3.6.0</checkstyle-maven-plugin.version>
@@ -89,7 +89,7 @@
     <dependency>
       <groupId>org.projectlombok</groupId>
       <artifactId>lombok</artifactId>
-      <version>1.18.30</version>
+      <version>1.18.36</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -132,7 +132,7 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
           <configuration>
-            <release>21</release>
+            <release>23</release>
             <showDeprecation>true</showDeprecation>
             <compilerArgs>
               <arg>-Xlint:deprecation</arg>
@@ -141,7 +141,7 @@
               <path>
                 <groupId>org.projectlombok</groupId>
                 <artifactId>lombok</artifactId>
-                <version>1.18.30</version>
+                <version>1.18.36</version>
               </path>
             </annotationProcessorPaths>
           </configuration>
@@ -153,7 +153,9 @@
           <configuration>
             <argLine>@{argLine}
               -javaagent:${user.home}/.m2/repository/com/github/hazendaz/jmockit/jmockit/${jmockit.version}/jmockit-${jmockit.version}.jar
-              -Xshare:off</argLine>
+              -Xshare:off
+              -Djava.library.path=${project.build.directory}/libs
+              --enable-native-access=ALL-UNNAMED</argLine>
             <!-- <testFailureIgnore>true</testFailureIgnore> -->
             <systemPropertyVariables>
               <loader.path>${loader.path}</loader.path>
