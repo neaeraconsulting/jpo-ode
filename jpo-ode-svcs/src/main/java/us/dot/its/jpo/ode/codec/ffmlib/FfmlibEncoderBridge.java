@@ -122,7 +122,7 @@ public class FfmlibEncoderBridge {
    * }</pre>
    */
   private String buildEncoderOutputXml(JSONObject metadata, String dataKey, String hexBytes)
-      throws XmlUtilsException {
+      throws XmlUtilsException, JsonUtils.JsonUtilsException {
     ObjectNode metadataNode = JsonUtils.toObjectNode(metadata.toString());
 
     ObjectNode bytesNode = JsonUtils.newNode();

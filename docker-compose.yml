@@ -14,8 +14,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "2"
-          memory: 4G
+          cpus: "6"
+          memory: 6G
     ports:
       - "8080:8080"
       - "9091:9090"
@@ -65,6 +65,8 @@ services:
       ODE_ROCKSDB_N_MEMTABLES: ${ODE_ROCKSDB_N_MEMTABLES}
       ODE_ROCKSDB_MEMTABLE_SIZE: ${ODE_ROCKSDB_MEMTABLE_SIZE}
       ODE_KAFKA_LISTENER_CONCURRENCY: ${ODE_KAFKA_LISTENER_CONCURRENCY}
+      ODE_FFMLIB_ENABLED: ${ODE_FFMLIB_ENABLED:-false}
+      ODE_FFMLIB_NATIVE_LIB_PATH: ${ODE_FFMLIB_NATIVE_LIB_PATH:-/home/libs/libasnapplication.so}
     depends_on:
       kafka:
         condition: service_healthy
@@ -94,7 +96,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "1"
+          cpus: "4"
           memory: 2G
     environment:
       DOCKER_HOST_IP: ${DOCKER_HOST_IP}
