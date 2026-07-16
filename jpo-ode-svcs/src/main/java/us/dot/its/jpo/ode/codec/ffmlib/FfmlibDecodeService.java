@@ -126,7 +126,7 @@ public class FfmlibDecodeService {
     if (workers <= 0) {
       workers = Math.max(2, Runtime.getRuntime().availableProcessors());
     }
-    int queueCapacity = Math.max(64, properties.getUdpDecodeQueueCapacity());
+    int queueCapacity = Math.max(1, properties.getUdpDecodeQueueCapacity());
     AtomicInteger seq = new AtomicInteger();
     ThreadFactory factory = r -> {
       Thread t = new Thread(r, "ffmlib-udp-decode-" + seq.incrementAndGet());
@@ -180,13 +180,13 @@ public class FfmlibDecodeService {
    * {@code RawEncoded*JsonRouter} and {@code topic.OdeRawEncoded*Json}.
    */
   public void decode(OdeAsn1Data asn1Data, String key) {
-    long totalStart = System.nanoTime();
     try {
       long prepStart = System.nanoTime();
       OdeHexByteArray hexBytes = (OdeHexByteArray) asn1Data.getPayload().getData();
       byte[] uperBytes = CodecUtils.fromHex(hexBytes.getBytes());
       prepTimer.record(System.nanoTime() - prepStart, TimeUnit.NANOSECONDS);
 
+      // totalTimer is recorded inside runPublishDecoded (same as the UDP worker path).
       runPublishDecoded(
           (OdeMessageFrameMetadata) asn1Data.getMetadata(), uperBytes, key, null);
     } catch (ClassCastException e) {
@@ -194,8 +194,6 @@ public class FfmlibDecodeService {
           e);
     } catch (Exception e) {
       log.error("FFMLib decode unexpected error for key {}: {}", key, e.getMessage(), e);
-    } finally {
-      totalTimer.record(System.nanoTime() - totalStart, TimeUnit.NANOSECONDS);
     }
   }
 
@@ -229,7 +227,7 @@ public class FfmlibDecodeService {
       pojoTimer.record(pojoNanos, TimeUnit.NANOSECONDS);
 
       long asnDecodeLatencyMs = (nativeNanos + pojoNanos) / 1_000_000;
-      metadata.setAsnDecodeLatencyMs(asnDecodeLatencyMs);
+      metadata.setAsnDecodeLatencyMs(Long.valueOf(asnDecodeLatencyMs));
       metadata.setEncodings(null);
       if (metadata.getReceivedMessageDetails() != null
           && metadata.getReceivedMessageDetails().getRxSource() == null) {
