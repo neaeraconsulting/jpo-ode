@@ -6,8 +6,13 @@ import org.springframework.context.annotation.Configuration;
 
 /**
  * Configuration properties for the FFMLib in-process ASN.1 codec.
- * When {@code enabled} is true, the ODE bypasses the external asn1_codec microservice
- * and uses the FFMLib MessageFrameCodec directly for UPER encode/decode operations.
+ *
+ * <p>Native {@code MessageFrameCodec} buffer parameters map to:
+ * <ul>
+ *   <li>{@code textBufferSize} — XER/JER text buffer (needed for both encode and decode)</li>
+ *   <li>{@code uperBufferSize} — UPER binary buffer</li>
+ *   <li>{@code errorBufferSize} — native error message buffer</li>
+ * </ul>
  */
 @Configuration
 @ConfigurationProperties(prefix = "ode.ffmlib")
@@ -15,16 +20,44 @@ import org.springframework.context.annotation.Configuration;
 public class FfmlibProperties {
 
   /**
-   * When true, the FFMLib is used for in-process UPER decode and encode,
-   * bypassing the Asn1DecoderInput/Asn1DecoderOutput Kafka topics for decoding
-   * and the external asn1_codec container for encoding.
-   * Defaults to false for backwards compatibility.
-   */
-  private boolean enabled = false;
-
-  /**
    * Explicit path to the native shared library (asnapplication.dll / libasnapplication.so).
    * If blank, the library is auto-detected from the working directory, target/libs/, or libs/.
    */
   private String nativeLibraryPath = "";
+
+  /**
+   * Text buffer size in bytes for XER/JER encode/decode (native {@code textBufferSize}).
+   * Default 256 KiB — large MAP/TIM XER output can exceed smaller sizes.
+   */
+  private long textBufferSize = 262144L;
+
+  /**
+   * UPER binary buffer size in bytes (native {@code uperBufferSize}).
+   * Default 16 KiB — UPER is compact; keep modest to limit ThreadLocal native memory.
+   */
+  private long uperBufferSize = 16384L;
+
+  /**
+   * Native error buffer size in bytes (native {@code errorBufferSize}).
+   */
+  private long errorBufferSize = 512L;
+
+  /**
+   * Intermediate encoding used after UPER decode before POJO mapping.
+   * {@code jer} is preferred when the native library reports JER as supported; otherwise XER
+   * is used. Set to {@code xer} to force the XER path.
+   */
+  private String intermediateEncoding = "auto";
+
+  /**
+   * Worker threads for UDP decode after socket receive / prep. {@code 0} means
+   * {@code Runtime.availableProcessors()}. Each worker holds a ThreadLocal native codec.
+   */
+  private int udpDecodeWorkers = 0;
+
+  /**
+   * Bounded queue capacity for UDP decode tasks. When full, new packets are dropped and
+   * {@code ode.ffmlib.decode.queue_rejected} is incremented.
+   */
+  private int udpDecodeQueueCapacity = 4096;
 }

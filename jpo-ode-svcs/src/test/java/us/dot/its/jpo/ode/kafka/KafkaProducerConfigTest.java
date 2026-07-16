@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -33,6 +32,7 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import us.dot.its.jpo.ode.config.SerializationConfig;
 import us.dot.its.jpo.ode.kafka.OdeKafkaProperties.Producer;
+import us.dot.its.jpo.ode.kafka.producer.KafkaProduceMetrics;
 import us.dot.its.jpo.ode.kafka.producer.KafkaProducerConfig;
 import us.dot.its.jpo.ode.model.OdeObject;
 import us.dot.its.jpo.ode.test.utilities.EmbeddedKafkaHolder;
@@ -51,10 +51,9 @@ class KafkaProducerConfigTest {
   @Qualifier("testOdeKafkaProperties")
   OdeKafkaProperties odeKafkaProperties;
   @Autowired
-  @Qualifier("testMeterRegistry")
-  MeterRegistry meterRegistry;
+  @Qualifier("testProduceMetrics")
+  KafkaProduceMetrics produceMetrics;
   XmlMapper xmlMapper;
-  ObjectMapper objectMapper = new ObjectMapper();
 
   EmbeddedKafkaBroker embeddedKafka = EmbeddedKafkaHolder.getEmbeddedKafka();
 
@@ -83,7 +82,7 @@ class KafkaProducerConfigTest {
     embeddedKafka.consumeFromEmbeddedTopics(consumer,
         odeKafkaProperties.getDisabledTopics().toArray(new String[0]));
     KafkaTemplate<String, String> stringKafkaTemplate = kafkaProducerConfig.kafkaTemplate(
-        kafkaProducerConfig.producerFactory(), objectMapper);
+        kafkaProducerConfig.producerFactory());
     // Attempting to send to a disabled topic
     for (String topic : odeKafkaProperties.getDisabledTopics()) {
       stringKafkaTemplate.send(topic, "key", "value");
@@ -113,7 +112,7 @@ class KafkaProducerConfigTest {
     // Attempting to send to a topic not in the disabledTopics set with the string
     // template
     KafkaTemplate<String, String> stringKafkaTemplate = kafkaProducerConfig.kafkaTemplate(
-        kafkaProducerConfig.producerFactory(), objectMapper);
+        kafkaProducerConfig.producerFactory());
     stringKafkaTemplate.send(enabledTopic, "key", "value");
 
     var records = KafkaTestUtils.getRecords(consumer);
@@ -134,7 +133,7 @@ class KafkaProducerConfigTest {
     embeddedKafka.consumeFromAnEmbeddedTopic(consumer, enabledTopic);
 
     KafkaTemplate<String, String> stringKafkaTemplate = kafkaProducerConfig.kafkaTemplate(
-        kafkaProducerConfig.producerFactory(), objectMapper);
+        kafkaProducerConfig.producerFactory());
     var blockedTopic = odeKafkaProperties.getDisabledTopics().iterator().next();
     stringKafkaTemplate.send(blockedTopic, "blocked", "not sent");
     stringKafkaTemplate.send(enabledTopic, "key", "value");
@@ -168,9 +167,14 @@ class KafkaProducerConfigTest {
     }
 
     @Bean
+    public KafkaProduceMetrics testProduceMetrics(MeterRegistry testMeterRegistry) {
+      return new KafkaProduceMetrics(testMeterRegistry);
+    }
+
+    @Bean
     public KafkaProducerConfig testKafkaProducerConfig(KafkaProperties kafkaProperties,
-        OdeKafkaProperties testOdeKafkaProperties, MeterRegistry meterRegistry) {
-      return new KafkaProducerConfig(kafkaProperties, testOdeKafkaProperties, meterRegistry);
+        OdeKafkaProperties testOdeKafkaProperties, KafkaProduceMetrics testProduceMetrics) {
+      return new KafkaProducerConfig(kafkaProperties, testOdeKafkaProperties, testProduceMetrics);
     }
   }
 }

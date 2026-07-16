@@ -11,11 +11,11 @@ services:
     build: .
     image: jpoode_ode:latest
     restart: ${RESTART_POLICY}
-    deploy:
-      resources:
-        limits:
-          cpus: "6"
-          memory: 6G
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: "6"
+    #       memory: 6G
     ports:
       - "8080:8080"
       - "9091:9090"
@@ -65,8 +65,9 @@ services:
       ODE_ROCKSDB_N_MEMTABLES: ${ODE_ROCKSDB_N_MEMTABLES}
       ODE_ROCKSDB_MEMTABLE_SIZE: ${ODE_ROCKSDB_MEMTABLE_SIZE}
       ODE_KAFKA_LISTENER_CONCURRENCY: ${ODE_KAFKA_LISTENER_CONCURRENCY}
-      ODE_FFMLIB_ENABLED: ${ODE_FFMLIB_ENABLED:-false}
       ODE_FFMLIB_NATIVE_LIB_PATH: ${ODE_FFMLIB_NATIVE_LIB_PATH:-/home/libs/libasnapplication.so}
+      ODE_FFMLIB_UDP_DECODE_WORKERS: ${ODE_FFMLIB_UDP_DECODE_WORKERS:-0}
+      ODE_FFMLIB_UDP_DECODE_QUEUE_CAPACITY: ${ODE_FFMLIB_UDP_DECODE_QUEUE_CAPACITY:-4096}
     depends_on:
       kafka:
         condition: service_healthy

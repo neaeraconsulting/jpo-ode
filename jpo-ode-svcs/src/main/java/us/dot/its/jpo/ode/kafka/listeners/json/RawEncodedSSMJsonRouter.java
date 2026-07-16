@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
-import us.dot.its.jpo.ode.codec.ffmlib.RawEncodedDecodeService;
+import us.dot.its.jpo.ode.codec.ffmlib.FfmlibDecodeService;
 import us.dot.its.jpo.ode.model.OdeMessageFrameMetadata;
 import us.dot.its.jpo.ode.uper.StartFlagNotFoundException;
 import us.dot.its.jpo.ode.uper.SupportedMessageType;
@@ -17,7 +17,7 @@ import us.dot.its.jpo.ode.uper.SupportedMessageType;
 @Component
 public class RawEncodedSSMJsonRouter {
 
-  private final RawEncodedDecodeService decodeService;
+  private final FfmlibDecodeService decodeService;
   private final RawEncodedJsonService rawEncodedJsonService;
 
   /**
@@ -27,7 +27,7 @@ public class RawEncodedSSMJsonRouter {
    *                              or decodes in-process via FFMLib, depending on configuration.
    * @param rawEncodedJsonService A service to transform incoming data into the expected output
    */
-  public RawEncodedSSMJsonRouter(RawEncodedDecodeService decodeService,
+  public RawEncodedSSMJsonRouter(FfmlibDecodeService decodeService,
       RawEncodedJsonService rawEncodedJsonService) {
     this.decodeService = decodeService;
     this.rawEncodedJsonService = rawEncodedJsonService;

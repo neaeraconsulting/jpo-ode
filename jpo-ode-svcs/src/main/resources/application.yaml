@@ -130,8 +130,16 @@ ode:
     upload-location-root: "uploads"
     obu-log-upload-location: "bsmlog"
   ffmlib:
-    enabled: ${ODE_FFMLIB_ENABLED:false}
     native-library-path: ${ODE_FFMLIB_NATIVE_LIB_PATH:}
+    # Native MessageFrameCodec buffers (one instance per Kafka/UDP worker thread via ThreadLocal)
+    text-buffer-size: ${ODE_FFMLIB_TEXT_BUFFER_SIZE:262144}
+    uper-buffer-size: ${ODE_FFMLIB_UPER_BUFFER_SIZE:16384}
+    error-buffer-size: ${ODE_FFMLIB_ERROR_BUFFER_SIZE:512}
+    # Intermediate encoding after UPER: auto (JER when native lib supports it, else XER), jer, or xer
+    intermediate-encoding: ${ODE_FFMLIB_INTERMEDIATE_ENCODING:auto}
+    # UDP decode worker pool (0 = availableProcessors). Prep stays on the receive thread.
+    udp-decode-workers: ${ODE_FFMLIB_UDP_DECODE_WORKERS:0}
+    udp-decode-queue-capacity: ${ODE_FFMLIB_UDP_DECODE_QUEUE_CAPACITY:4096}
   tim-ingest-monitoring:
     tracking-enabled: ${ODE_TIM_INGEST_MONITORING_ENABLED}
     interval: ${ODE_TIM_INGEST_MONITORING_INTERVAL}

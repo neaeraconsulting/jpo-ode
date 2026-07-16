@@ -5,7 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
@@ -26,9 +25,6 @@ import us.dot.its.jpo.ode.util.XmlUtils.XmlUtilsException;
  * {@link us.dot.its.jpo.ode.kafka.listeners.asn1.Asn1EncodedDataRouter} expects.
  * This leaves the signing, RSU deposition, and SDX delivery logic entirely unchanged.
  *
- * <p>Active (and exclusively responsible for encoding) when {@code ode.ffmlib.enabled=true}.
- * When the flag is off this bean is not created and the external asn1_codec handles encoding.
- *
  * <p><strong>ASD (AdvisorySituationData) note:</strong> The second TIM encoding round that
  * packages a signed TIM inside an ASD structure is also handled here when the payload data
  * contains an {@code AdvisorySituationData} node; however, the FFMLib {@code xerToUper} call
@@ -37,7 +33,6 @@ import us.dot.its.jpo.ode.util.XmlUtils.XmlUtilsException;
  */
 @Slf4j
 @Component
-@ConditionalOnProperty(name = "ode.ffmlib.enabled", havingValue = "true")
 public class FfmlibEncoderBridge {
 
   private static final String MESSAGE_FRAME = "MessageFrame";
