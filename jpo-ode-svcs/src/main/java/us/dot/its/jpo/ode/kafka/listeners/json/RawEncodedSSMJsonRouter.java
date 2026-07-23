@@ -23,7 +23,7 @@ public class RawEncodedSSMJsonRouter {
   /**
    * Constructs an instance of the RawEncodedSSMJsonRouter.
    *
-   * @param decodeService         Strategy that either forwards to the Asn1DecoderInput Kafka topic
+   * @param decodeService         In-process FFMLib decode service that publishes decoded JSON
    *                              or decodes in-process via FFMLib, depending on configuration.
    * @param rawEncodedJsonService A service to transform incoming data into the expected output
    */

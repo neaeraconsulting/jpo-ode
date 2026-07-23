@@ -51,11 +51,6 @@ ode:
       partitioner-class: ${KAFKA_PARTITIONER_CLASS}
       compression-type: ${KAFKA_COMPRESSION_TYPE}
     topics:
-      asn1:
-        decoder-input: "topic.Asn1DecoderInput"
-        decoder-output: "topic.Asn1DecoderOutput"
-        encoder-input: "topic.Asn1EncoderInput"
-        encoder-output: "topic.Asn1EncoderOutput"
       json:
         bsm: "topic.OdeBsmJson"
         map: "topic.OdeMapJson"

@@ -133,7 +133,7 @@ Supported message types:
 The ODE software can run on most standard Windows, Mac, or Linux based computers with
 Pentium core processors. Performance of the software will be based on the computing power and available RAM in
 the system.  Larger data flows can require much larger space requirements depending on the
-amount of data being processed by the software. The ODE software application was developed using the open source programming language Java. If running the ODE outside of Docker, the application requires the Java 21 runtime environment.
+amount of data being processed by the software. The ODE software application was developed using the open source programming language Java. If running the ODE outside of Docker, the application requires the Java 25 runtime environment.
 
 ### Software Prerequisites
 
@@ -213,7 +213,7 @@ The ODE software system consists of the following modules hosted in separate Git
 |-------------------------------------------------------------------------|------------|--------------------------------------------------------------------------------------------------------|
 | [jpo-ode](https://github.com/usdot-jpo-ode/jpo-ode)                     | public     | Contains the public components of the application code.                                                |
 | [jpo-cvdp](https://github.com/usdot-jpo-ode/jpo-cvdp)                   | public     | Privacy Protection Module                                                                              |
-| [asn1_codec](https://github.com/usdot-jpo-ode/asn1_codec)               | public     | ASN.1 Encoder/Decoder module                                                                           |
+| [asn1_codec](https://github.com/usdot-jpo-ode/asn1_codec)               | public     | Legacy ASN.1 Encoder/Decoder (Kafka ADM/AEM). ODE now uses in-process FFMLib instead.                   |
 | [jpo-security-svcs](https://github.com/usdot-jpo-ode/jpo-security-svcs) | public     | Provides cryptographic services.                                                                       |
 | [jpo-sdw-depositor](https://github.com/usdot-jpo-ode/jpo-sdw-depositor) | public     | SDW depositor service. Optional, can be enabled by using the `COMPOSE_PROFILES` environmental variable |
 | [jpo-asn-pojos](https://github.com/usdot-jpo-ode/jpo-asn-pojos)         | public     | ASN.1 POJOs for J2735 messages.                                                                        |
@@ -384,17 +384,15 @@ If using the multi-broker docker compose file, you can change the scaling by run
 To configure what services are started, use the `COMPOSE_PROFILE` environmental variable and set a comma separated string of profiles you want to start up. This project also supports all `COMPOSE_PROFILE` values implemented in the [jpo-utils](jpo-utils/README.md) `docker-compose.yml`. The following are the available profiles that the ODE is currently configured to use along with the services they will enable:
 
 - Profile name: `ode_base`
-  - Services: `ode, adm, and aem`
+  - Services: `ode`
 - Profile name: `ode_full`
-  - Services: `ode, adm, aem, ppm_bsm, sdw_depositor, and sec`
+  - Services: `ode, ppm_bsm, sdw_depositor, and sec`
 
 Profiles are also available for each service name to individually specify a service to enable.
 
-#### asn1_codec Module (ASN.1 Encoder and Decoder)
+#### ASN.1 Encode/Decode (FFMLib)
 
-ODE requires the deployment of asn1_codec module. ODE's `docker-compose.yml` file is set up to build and deploy the module in a Docker container. If you wish to run `asn1_codec` module outside Docker (i.e. directly on the host machine), please refer to the documentation of `asn1_codec` module.
-
-The only requirement for deploying `asn1_codec` module on Docker is the setup of two environment variables `DOCKER_HOST_IP` and `DOCKER_SHARED_VOLUME`.
+ODE performs J2735 ASN.1 encode and decode **in-process** via FFMLib. The external `asn1_codec` ADM/AEM Kafka services are no longer required for ODE encode/decode paths.
 
 #### PPM Module (Geofencing and Filtering)
 
@@ -520,7 +518,7 @@ This section outlines the software technology stacks of the ODE.
 
 ### ODE Code
 
-- [Java 21](https://openjdk.java.net/)
+- [Java 25](https://openjdk.java.net/)
 - [Maven](https://maven.apache.org/)
 - [Spring Boot](http://spring.io/projects/spring-boot)
 - [Logback](https://logback.qos.ch/)

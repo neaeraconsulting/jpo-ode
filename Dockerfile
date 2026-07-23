@@ -1,4 +1,4 @@
-FROM maven:3.9-eclipse-temurin-23-alpine AS builder
+FROM maven:3.9-eclipse-temurin-25-alpine AS builder
 LABEL org.opencontainers.image.authors="583114@bah.com"
 
 WORKDIR /home
@@ -27,7 +27,7 @@ COPY ./jpo-ode-svcs/src ./jpo-ode-svcs/src
 # Then build the rest of the project
 RUN mvn -pl jpo-ode-common,jpo-ode-plugins,jpo-ode-core,jpo-ode-svcs -am package -DskipTests
 
-FROM eclipse-temurin:23-jre-alpine
+FROM eclipse-temurin:25-jre-alpine
 
 WORKDIR /home
 
