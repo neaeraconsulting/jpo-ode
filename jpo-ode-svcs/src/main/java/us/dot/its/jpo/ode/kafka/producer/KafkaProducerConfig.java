@@ -1,8 +1,6 @@
 package us.dot.its.jpo.ode.kafka.producer;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
-import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Map;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringSerializer;
@@ -42,7 +40,7 @@ public class KafkaProducerConfig {
 
   private final KafkaProperties kafkaProperties;
   private final OdeKafkaProperties odeKafkaProperties;
-  private final MeterRegistry meterRegistry;
+  private final KafkaProduceMetrics produceMetrics;
 
   /**
    * Constructor for the KafkaProducerConfig class, which sets up the
@@ -60,12 +58,13 @@ public class KafkaProducerConfig {
    *                           and other
    *                           specialized settings for integrating with the ODE
    *                           infrastructure.
+   * @param produceMetrics     cached produce counters (topic-level; no JSON parse)
    */
   public KafkaProducerConfig(KafkaProperties kafkaProperties,
-      OdeKafkaProperties odeKafkaProperties, MeterRegistry meterRegistry) {
+      OdeKafkaProperties odeKafkaProperties, KafkaProduceMetrics produceMetrics) {
     this.kafkaProperties = kafkaProperties;
     this.odeKafkaProperties = odeKafkaProperties;
-    this.meterRegistry = meterRegistry;
+    this.produceMetrics = produceMetrics;
   }
 
   /**
@@ -102,9 +101,9 @@ public class KafkaProducerConfig {
    */
   @Bean
   public KafkaTemplate<String, String> kafkaTemplate(
-      ProducerFactory<String, String> producerFactory, ObjectMapper objectMapper) {
+      ProducerFactory<String, String> producerFactory) {
     var template = new InterceptingKafkaTemplate<>(producerFactory,
-        this.odeKafkaProperties.getDisabledTopics(), meterRegistry, objectMapper);
+        this.odeKafkaProperties.getDisabledTopics(), produceMetrics);
 
     template.setProducerListener(new LoggingProducerListener<>());
 
@@ -148,9 +147,9 @@ public class KafkaProducerConfig {
    */
   @Bean
   public KafkaTemplate<String, OdeObject> odeDataKafkaTemplate(
-      ProducerFactory<String, OdeObject> producerFactory, ObjectMapper objectMapper) {
+      ProducerFactory<String, OdeObject> producerFactory) {
     var template = new InterceptingKafkaTemplate<>(producerFactory,
-        this.odeKafkaProperties.getDisabledTopics(), meterRegistry, objectMapper);
+        this.odeKafkaProperties.getDisabledTopics(), produceMetrics);
     template.setProducerListener(new LoggingProducerListener<>());
 
     return template;

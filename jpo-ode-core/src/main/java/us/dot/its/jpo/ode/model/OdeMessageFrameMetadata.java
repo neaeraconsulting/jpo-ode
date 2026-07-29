@@ -1,5 +1,6 @@
 package us.dot.its.jpo.ode.model;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -23,6 +24,9 @@ public class OdeMessageFrameMetadata extends OdeLogMetadata {
 
   private Source source;
   private String originIp;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private Long asnDecodeLatencyMs;
 
   // Only used for messages created through the TIM deposit endpoint
   @JsonProperty("request")

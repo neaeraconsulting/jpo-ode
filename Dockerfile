@@ -1,4 +1,4 @@
-FROM maven:3.8-eclipse-temurin-21-alpine AS builder
+FROM maven:3.9-eclipse-temurin-25-alpine AS builder
 LABEL org.opencontainers.image.authors="583114@bah.com"
 
 WORKDIR /home
@@ -27,18 +27,19 @@ COPY ./jpo-ode-svcs/src ./jpo-ode-svcs/src
 # Then build the rest of the project
 RUN mvn -pl jpo-ode-common,jpo-ode-plugins,jpo-ode-core,jpo-ode-svcs -am package -DskipTests
 
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:25-jre-alpine
 
 WORKDIR /home
 
 COPY --from=builder /home/jpo-ode-svcs/src/main/resources/application.yaml /home
 COPY --from=builder /home/jpo-ode-svcs/src/main/resources/logback.xml /home
 COPY --from=builder /home/jpo-ode-svcs/target/jpo-ode-svcs.jar /home
+COPY --from=builder /home/jpo-ode-svcs/target/libs/ /home/libs/
 COPY ./scripts/startup_jpoode.sh /home
 
 RUN apk --no-cache add openssh  \
     && apk --no-cache add openrc  \
     && rc-update add sshd \
-    && apk add libstdc++
+    && apk add libstdc++ gcompat
 
 ENTRYPOINT ["sh", "/home/startup_jpoode.sh"]

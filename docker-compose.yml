@@ -11,11 +11,11 @@ services:
     build: .
     image: jpoode_ode:latest
     restart: ${RESTART_POLICY}
-    deploy:
-      resources:
-        limits:
-          cpus: "2"
-          memory: 4G
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: "6"
+    #       memory: 6G
     ports:
       - "8080:8080"
       - "9091:9090"
@@ -65,6 +65,9 @@ services:
       ODE_ROCKSDB_N_MEMTABLES: ${ODE_ROCKSDB_N_MEMTABLES}
       ODE_ROCKSDB_MEMTABLE_SIZE: ${ODE_ROCKSDB_MEMTABLE_SIZE}
       ODE_KAFKA_LISTENER_CONCURRENCY: ${ODE_KAFKA_LISTENER_CONCURRENCY}
+      ODE_FFMLIB_NATIVE_LIB_PATH: ${ODE_FFMLIB_NATIVE_LIB_PATH:-/home/libs/libasnapplication.so}
+      ODE_FFMLIB_UDP_DECODE_WORKERS: ${ODE_FFMLIB_UDP_DECODE_WORKERS:-0}
+      ODE_FFMLIB_UDP_DECODE_QUEUE_CAPACITY: ${ODE_FFMLIB_UDP_DECODE_QUEUE_CAPACITY:-4096}
     depends_on:
       kafka:
         condition: service_healthy
@@ -77,74 +80,6 @@ services:
       timeout: 30s
       retries: 5
       start_period: 10s
-    logging:
-      options:
-        max-size: "10m"
-        max-file: "5"
-
-  adm:
-    profiles:
-      - all
-      - ode_full
-      - ode_base
-      - adm
-    build: ./asn1_codec
-    image: jpoode_acm:latest
-    restart: ${RESTART_POLICY}
-    deploy:
-      resources:
-        limits:
-          cpus: "1"
-          memory: 2G
-    environment:
-      DOCKER_HOST_IP: ${DOCKER_HOST_IP}
-      KAFKA_TYPE: ${KAFKA_TYPE}
-      CONFLUENT_KEY: ${CONFLUENT_KEY}
-      CONFLUENT_SECRET: ${CONFLUENT_SECRET}
-      ACM_CONFIG_FILE: adm.properties
-      ACM_LOG_TO_CONSOLE: ${ADM_LOG_TO_CONSOLE}
-      ACM_LOG_TO_FILE: ${ADM_LOG_TO_FILE}
-      ACM_LOG_LEVEL: ${ADM_LOG_LEVEL}
-      ACM_NUMBER_OF_PROCESSES: ${ADM_NUMBER_OF_PROCESSES:-1}
-    depends_on:
-      kafka:
-        condition: service_healthy
-    volumes:
-      - ${DOCKER_SHARED_VOLUME}:/asn1_codec_share
-    logging:
-      options:
-        max-size: "10m"
-        max-file: "5"
-
-  aem:
-    profiles:
-      - all
-      - ode_full
-      - ode_base
-      - aem
-    build: ./asn1_codec
-    image: jpoode_acm:latest
-    restart: ${RESTART_POLICY}
-    deploy:
-      resources:
-        limits:
-          cpus: "1"
-          memory: 2G
-    environment:
-      DOCKER_HOST_IP: ${DOCKER_HOST_IP}
-      KAFKA_TYPE: ${KAFKA_TYPE}
-      CONFLUENT_KEY: ${CONFLUENT_KEY}
-      CONFLUENT_SECRET: ${CONFLUENT_SECRET}
-      ACM_CONFIG_FILE: aem.properties
-      ACM_LOG_TO_CONSOLE: ${AEM_LOG_TO_CONSOLE}
-      ACM_LOG_TO_FILE: ${AEM_LOG_TO_FILE}
-      ACM_LOG_LEVEL: ${AEM_LOG_LEVEL}
-      ACM_NUMBER_OF_PROCESSES: ${AEM_NUMBER_OF_PROCESSES:-1}
-    depends_on:
-      kafka:
-        condition: service_healthy
-    volumes:
-      - ${DOCKER_SHARED_VOLUME}:/asn1_codec_share
     logging:
       options:
         max-size: "10m"

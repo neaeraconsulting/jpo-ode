@@ -1,186 +1,106 @@
 package us.dot.its.jpo.ode.udp.generic;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.clearInvocations;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 
+import java.net.DatagramPacket;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.time.Clock;
-import java.time.Instant;
-import java.time.ZoneOffset;
-import java.util.Map;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import org.apache.kafka.clients.consumer.Consumer;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.common.serialization.StringDeserializer;
-import org.json.JSONObject;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.kafka.KafkaProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
-import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.kafka.test.EmbeddedKafkaBroker;
-import org.springframework.kafka.test.utils.KafkaTestUtils;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
-import us.dot.its.jpo.ode.config.SerializationConfig;
-import us.dot.its.jpo.ode.kafka.OdeKafkaProperties;
-import us.dot.its.jpo.ode.kafka.TestMetricsConfig;
-import us.dot.its.jpo.ode.kafka.producer.KafkaProducerConfig;
-import us.dot.its.jpo.ode.kafka.topics.RawEncodedJsonTopics;
-import us.dot.its.jpo.ode.test.utilities.EmbeddedKafkaHolder;
+import us.dot.its.jpo.ode.codec.ffmlib.FfmlibDecodeService;
 import us.dot.its.jpo.ode.test.utilities.TestUDPClient;
 import us.dot.its.jpo.ode.udp.controller.UDPReceiverProperties;
-import us.dot.its.jpo.ode.util.DateTimeUtils;
+import us.dot.its.jpo.ode.uper.SupportedMessageType;
 
 @EnableConfigurationProperties
 @SpringBootTest(
-    classes = {OdeKafkaProperties.class, UDPReceiverProperties.class, KafkaProducerConfig.class,
-        SerializationConfig.class, TestMetricsConfig.class,},
-    properties = {"ode.receivers.generic.receiver-port=15460",
-        "ode.kafka.topics.raw-encoded-json.bsm=topic.GenericReceiverTestBSM",
-        "ode.kafka.topics.raw-encoded-json.map=topic.GenericReceiverTestMAP",
-        "ode.kafka.topics.raw-encoded-json.psm=topic.GenericReceiverTestPSM",
-        "ode.kafka.topics.raw-encoded-json.spat=topic.GenericReceiverTestSPAT",
-        "ode.kafka.topics.raw-encoded-json.ssm=topic.GenericReceiverTestSSM",
-        "ode.kafka.topics.raw-encoded-json.tim=topic.GenericReceiverTestTIM",
-        "ode.kafka.topics.raw-encoded-json.srm=topic.GenericReceiverTestSRM",
-        "ode.kafka.topics.raw-encoded-json.sdsm=topic.GenericReceiverTestSDSM",
-        "ode.kafka.topics.raw-encoded-json.rtcm=topic.GenericReceiverTestRTCM",
-        "ode.kafka.topics.raw-encoded-json.rsm=topic.GenericReceiverTestRSM"})
-@ContextConfiguration(classes = {UDPReceiverProperties.class, OdeKafkaProperties.class,
-    RawEncodedJsonTopics.class, KafkaProperties.class})
+    classes = {UDPReceiverProperties.class},
+    properties = {"ode.receivers.generic.receiver-port=15460"})
+@ContextConfiguration(classes = {UDPReceiverProperties.class})
 @DirtiesContext
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class GenericReceiverTest {
 
+  private record MsgFiles(String raw, String withSignature, SupportedMessageType type) {}
+
+  private static final String RES = "src/test/resources/us/dot/its/jpo/ode/udp/";
+
+  private static final List<MsgFiles> MSG_FILES = List.of(
+      new MsgFiles(RES + "bsm/BsmReceiverTest_ValidBSM.txt",
+          RES + "bsm/BsmReceiverTest_ValidBSM_WithSignature.txt", SupportedMessageType.BSM),
+      new MsgFiles(RES + "tim/TimReceiverTest_ValidTIM.txt",
+          RES + "tim/TimReceiverTest_ValidTIM_WithSignature.txt", SupportedMessageType.TIM),
+      new MsgFiles(RES + "map/MapReceiverTest_ValidMAP.txt",
+          RES + "map/MapReceiverTest_ValidMAP_WithSignature.txt", SupportedMessageType.MAP),
+      new MsgFiles(RES + "spat/SpatReceiverTest_ValidSPAT.txt",
+          RES + "spat/SpatReceiverTest_ValidSPAT_WithSignature.txt", SupportedMessageType.SPAT),
+      new MsgFiles(RES + "ssm/SsmReceiverTest_ValidSSM.txt",
+          RES + "ssm/SsmReceiverTest_ValidSSM_WithSignature.txt", SupportedMessageType.SSM),
+      new MsgFiles(RES + "srm/SrmReceiverTest_ValidData.txt",
+          RES + "srm/SrmReceiverTest_ValidData_WithSignature.txt", SupportedMessageType.SRM),
+      new MsgFiles(RES + "psm/PsmReceiverTest_ValidPSM.txt",
+          RES + "psm/PsmReceiverTest_ValidPSM_WithSignature.txt", SupportedMessageType.PSM),
+      new MsgFiles(RES + "sdsm/SdsmReceiverTest_ValidSDSM.txt",
+          RES + "sdsm/SdsmReceiverTest_ValidSDSM_WithSignature.txt", SupportedMessageType.SDSM),
+      new MsgFiles(RES + "rtcm/RtcmReceiverTest_ValidRTC.txt",
+          RES + "rtcm/RtcmReceiverTest_ValidRTC_WithSignature.txt", SupportedMessageType.RTCM),
+      new MsgFiles(RES + "rsm/RsmReceiverTest_ValidRSM.txt",
+          RES + "rsm/RsmReceiverTest_ValidRSM_WithSignature.txt", SupportedMessageType.RSM)
+  );
+
   @Autowired
   UDPReceiverProperties udpReceiverProperties;
 
-  @Autowired
-  RawEncodedJsonTopics rawEncodedJsonTopics;
-
-  @Autowired
-  KafkaTemplate<String, String> kafkaTemplate;
-
-  EmbeddedKafkaBroker embeddedKafka = EmbeddedKafkaHolder.getEmbeddedKafka();
-
+  private FfmlibDecodeService decodeService;
   private GenericReceiver genericReceiver;
   private ExecutorService executorService;
-  private Consumer<String, String> consumer;
-  private Clock prevClock;
 
   @BeforeAll
   void startReceiver() {
-    String[] topics = {rawEncodedJsonTopics.getBsm(), rawEncodedJsonTopics.getMap(),
-        rawEncodedJsonTopics.getPsm(), rawEncodedJsonTopics.getSpat(),
-        rawEncodedJsonTopics.getSsm(), rawEncodedJsonTopics.getTim(), rawEncodedJsonTopics.getSrm(),
-        rawEncodedJsonTopics.getSdsm(), rawEncodedJsonTopics.getRtcm(),
-        rawEncodedJsonTopics.getRsm()};
-    EmbeddedKafkaHolder.addTopics(topics);
-
-    genericReceiver = new GenericReceiver(udpReceiverProperties.getGeneric(), kafkaTemplate,
-        rawEncodedJsonTopics);
+    decodeService = mock(FfmlibDecodeService.class);
+    genericReceiver = new GenericReceiver(udpReceiverProperties.getGeneric(), decodeService);
     executorService = Executors.newCachedThreadPool();
     executorService.submit(genericReceiver);
-
-    var consumerProps = KafkaTestUtils.consumerProps("GenericReceiverTest", "true", embeddedKafka);
-    consumer = new DefaultKafkaConsumerFactory<>(consumerProps, new StringDeserializer(),
-        new StringDeserializer()).createConsumer();
-    embeddedKafka.consumeFromEmbeddedTopics(consumer, topics);
-
-    prevClock = DateTimeUtils
-        .setClock(Clock.fixed(Instant.parse("2024-11-26T23:53:21.120Z"), ZoneOffset.UTC));
   }
 
   @AfterAll
   void cleanup() {
     genericReceiver.setStopped(true);
     executorService.shutdown();
-    consumer.close();
-    DateTimeUtils.setClock(prevClock);
-  }
-
-  private record MsgFiles(String input, String expected) {}
-
-  private static Map<String, MsgFiles> buildFiles(String variant) {
-    String base = "src/test/resources/us/dot/its/jpo/ode/udp/";
-    String srmInput = variant.isEmpty()
-        ? base + "srm/SrmReceiverTest_ValidData.txt"
-        : base + "srm/SrmReceiverTest_ValidData" + variant + ".txt";
-    String srmExpected = variant.isEmpty()
-        ? base + "srm/SrmReceiverTest_ExpectedOutput.json"
-        : base + "srm/SrmReceiverTest_ExpectedOutput" + variant + ".json";
-    return Map.of(
-        "PSM",  new MsgFiles(base + "psm/PsmReceiverTest_ValidPSM" + variant + ".txt",
-                             base + "psm/PsmReceiverTest_ValidPSM" + variant + "_expected.json"),
-        "BSM",  new MsgFiles(base + "bsm/BsmReceiverTest_ValidBSM" + variant + ".txt",
-                             base + "bsm/BsmReceiverTest_ValidBSM" + variant + "_expected.json"),
-        "MAP",  new MsgFiles(base + "map/MapReceiverTest_ValidMAP" + variant + ".txt",
-                             base + "map/MapReceiverTest_ValidMAP" + variant + "_expected.json"),
-        "SPAT", new MsgFiles(base + "spat/SpatReceiverTest_ValidSPAT" + variant + ".txt",
-                             base + "spat/SpatReceiverTest_ValidSPAT" + variant + "_expected.json"),
-        "SSM",  new MsgFiles(base + "ssm/SsmReceiverTest_ValidSSM" + variant + ".txt",
-                             base + "ssm/SsmReceiverTest_ValidSSM" + variant + "_expected.json"),
-        "TIM",  new MsgFiles(base + "tim/TimReceiverTest_ValidTIM" + variant + ".txt",
-                             base + "tim/TimReceiverTest_ValidTIM" + variant + "_expected.json"),
-        "SRM",  new MsgFiles(srmInput, srmExpected),
-        "SDSM", new MsgFiles(base + "sdsm/SdsmReceiverTest_ValidSDSM" + variant + ".txt",
-                             base + "sdsm/SdsmReceiverTest_ValidSDSM" + variant + "_expected.json"),
-        "RTCM", new MsgFiles(base + "rtcm/RtcmReceiverTest_ValidRTC" + variant + ".txt",
-                             base + "rtcm/RtcmReceiverTest_ValidRTC" + variant + "_expected.json"),
-        "RSM",  new MsgFiles(base + "rsm/RsmReceiverTest_ValidRSM" + variant + ".txt",
-                             base + "rsm/RsmReceiverTest_ValidRSM" + variant + "_expected.json")
-    );
   }
 
   @Test
   void testRawJ2735() throws Exception {
-    runScenario(buildFiles(""));
+    TestUDPClient udpClient = new TestUDPClient(udpReceiverProperties.getGeneric().getReceiverPort());
+    for (MsgFiles mf : MSG_FILES) {
+      clearInvocations(decodeService);
+      udpClient.send(Files.readString(Paths.get(mf.raw())));
+      verify(decodeService, timeout(5000)).decode(any(DatagramPacket.class), eq(mf.type()));
+    }
   }
 
   @Test
   void testWithSignature() throws Exception {
-    runScenario(buildFiles("_WithSignature"));
-  }
-
-  private void runScenario(Map<String, MsgFiles> files) throws Exception {
-    TestUDPClient udpClient =
-        new TestUDPClient(udpReceiverProperties.getGeneric().getReceiverPort());
-
-    sendAndAssert(udpClient, rawEncodedJsonTopics.getPsm(), files.get("PSM"));
-    sendAndAssert(udpClient, rawEncodedJsonTopics.getBsm(), files.get("BSM"));
-    sendAndAssert(udpClient, rawEncodedJsonTopics.getMap(), files.get("MAP"));
-    sendAndAssert(udpClient, rawEncodedJsonTopics.getSpat(), files.get("SPAT"));
-    sendAndAssert(udpClient, rawEncodedJsonTopics.getSsm(), files.get("SSM"));
-    sendAndAssert(udpClient, rawEncodedJsonTopics.getTim(), files.get("TIM"));
-    sendAndAssert(udpClient, rawEncodedJsonTopics.getSrm(), files.get("SRM"));
-    sendAndAssert(udpClient, rawEncodedJsonTopics.getSdsm(), files.get("SDSM"));
-    sendAndAssert(udpClient, rawEncodedJsonTopics.getRtcm(), files.get("RTCM"));
-    sendAndAssert(udpClient, rawEncodedJsonTopics.getRsm(), files.get("RSM"));
-  }
-
-  private void sendAndAssert(TestUDPClient udpClient, String topic, MsgFiles files)
-      throws Exception {
-    String fileContent = Files.readString(Paths.get(files.input()));
-    String expected = Files.readString(Paths.get(files.expected()));
-    udpClient.send(fileContent);
-    ConsumerRecord<String, String> record = KafkaTestUtils.getSingleRecord(consumer, topic);
-
-    JSONObject producedJson = new JSONObject(record.value());
-    JSONObject expectedJson = new JSONObject(expected);
-
-    assertNotEquals(expectedJson.getJSONObject("metadata").get("serialId"),
-        producedJson.getJSONObject("metadata").get("serialId"));
-    expectedJson.getJSONObject("metadata").remove("serialId");
-    producedJson.getJSONObject("metadata").remove("serialId");
-
-    assertEquals(expectedJson.toString(2), producedJson.toString(2));
+    TestUDPClient udpClient = new TestUDPClient(udpReceiverProperties.getGeneric().getReceiverPort());
+    for (MsgFiles mf : MSG_FILES) {
+      clearInvocations(decodeService);
+      udpClient.send(Files.readString(Paths.get(mf.withSignature())));
+      verify(decodeService, timeout(5000)).decode(any(DatagramPacket.class), eq(mf.type()));
+    }
   }
 }

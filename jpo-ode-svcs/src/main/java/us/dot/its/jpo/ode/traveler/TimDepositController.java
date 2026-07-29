@@ -40,7 +40,8 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import us.dot.its.jpo.ode.coder.OdeMessageFrameDataCreatorHelper;
-import us.dot.its.jpo.ode.kafka.topics.Asn1CoderTopics;
+import us.dot.its.jpo.ode.codec.ffmlib.FfmlibEncodeService;
+import us.dot.its.jpo.ode.kafka.listeners.asn1.Asn1EncodedDataRouter;
 import us.dot.its.jpo.ode.kafka.topics.JsonTopics;
 import us.dot.its.jpo.ode.model.OdeMessageFrameData;
 import us.dot.its.jpo.ode.model.OdeMessageFrameMetadata;
@@ -72,10 +73,11 @@ public class TimDepositController {
   private static final String WARNING = "warning";
   private static final String SUCCESS = "success";
 
-  private final Asn1CoderTopics asn1CoderTopics;
   private final JsonTopics jsonTopics;
   private final XmlMapper simpleXmlMapper;
   private final KafkaTemplate<String, String> kafkaTemplate;
+  private final FfmlibEncodeService ffmlibEncodeService;
+  private final Asn1EncodedDataRouter asn1EncodedDataRouter;
 
   private SerialId serialIdJ2735;
 
@@ -96,17 +98,20 @@ public class TimDepositController {
    * Spring Autowired constructor for the REST controller to properly initialize.
    */
   @Autowired
-  public TimDepositController(Asn1CoderTopics asn1CoderTopics, JsonTopics jsonTopics,
+  public TimDepositController(JsonTopics jsonTopics,
       TimIngestTrackerProperties ingestTrackerProperties,
       SecurityServicesProperties securityServicesProperties,
       KafkaTemplate<String, String> kafkaTemplate,
-      XmlMapper simpleXmlMapper) {
+      XmlMapper simpleXmlMapper,
+      FfmlibEncodeService ffmlibEncodeService,
+      Asn1EncodedDataRouter asn1EncodedDataRouter) {
     super();
 
-    this.asn1CoderTopics = asn1CoderTopics;
     this.jsonTopics = jsonTopics;
     this.simpleXmlMapper = simpleXmlMapper;
     this.kafkaTemplate = kafkaTemplate;
+    this.ffmlibEncodeService = ffmlibEncodeService;
+    this.asn1EncodedDataRouter = asn1EncodedDataRouter;
     serialIdJ2735 = new SerialId();
 
     // start the TIM ingest monitoring service if enabled
@@ -267,10 +272,16 @@ public class TimDepositController {
 
       // Publish TIM JSON to the OdeTimJson topic for the TIM topology KTable
       kafkaTemplate.send(jsonTopics.getTim(), serialIdJ2735.getStreamId(), obfuscatedJ2735Tim);
-      // Publish TIM XML to the Asn1EncoderInput topic to be encoded by the ASN.1 Encoder module
-      kafkaTemplate.send(asn1CoderTopics.getEncoderInput(), serialIdJ2735.getStreamId(), xmlMsg);
+      // Encode in-process via FFMLib, then route (sign / RSU / SDX)
+      String encodedXml = ffmlibEncodeService.encodeOdeAsn1Xml(xmlMsg);
+      asn1EncodedDataRouter.processEncodedAsn1Xml(encodedXml);
     } catch (JsonUtils.JsonUtilsException | XmlUtils.XmlUtilsException | JsonProcessingException e) {
-      String errMsg = "Error sending data to ASN.1 Encoder module: " + e.getMessage();
+      String errMsg = "Error preparing TIM for FFMLib encode: " + e.getMessage();
+      log.error(errMsg, e);
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+          .body(JsonUtils.jsonKeyValue(ERRSTR, errMsg));
+    } catch (Exception e) {
+      String errMsg = "Error encoding TIM with FFMLib: " + e.getMessage();
       log.error(errMsg, e);
       return ResponseEntity.status(HttpStatus.BAD_REQUEST)
           .body(JsonUtils.jsonKeyValue(ERRSTR, errMsg));
